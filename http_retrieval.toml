@@ -1,0 +1,12 @@
+# miner id
+ID = "t018682"
+# miner peer
+PeerID = "12D3KooWJyN9rVrUxwHnK8oNgZ2HiU2AAggpeWePNvjQpnXKgz6H"
+#
+Multiaddrs = ["/ip4/<ip>/tcp/58418"]
+# piece cids
+Pieces = [
+    "baga6ea4seaqpzcr744w2rvqhkedfqbuqrbo7xtkde2ol6e26khu3wni64nbpaeq",
+    "baga6ea4seaqph5o2nkah4ihsfejxowniz5tpn6epgx7d2iunprcr453lvcmwcda",
+    "baga6ea4seaqp2gxiw4a5hrerykjpti7bzm6n6oc236jbkdykctwgthcmpqnjqhy",
+]

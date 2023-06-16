@@ -3,6 +3,7 @@ module github.com/data-preservation-programs/RetrievalBot
 go 1.19
 
 require (
+	github.com/BurntSushi/toml v1.3.2
 	github.com/bcicen/jstream v1.0.1
 	github.com/filecoin-project/go-cbor-util v0.0.1
 	github.com/filecoin-project/go-data-transfer/v2 v2.0.0-rc5
