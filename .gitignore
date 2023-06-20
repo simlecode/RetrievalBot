@@ -16,6 +16,8 @@
 .env
 .env.prod
 
+.vscode
+
 /bitswap_worker
 /filplus_integration
 /graphsync_worker

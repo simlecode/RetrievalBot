@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -12,6 +14,15 @@ import (
 	"github.com/data-preservation-programs/RetrievalBot/worker/http"
 )
 
+type Cfg struct {
+	Common struct {
+		PeerID     string
+		Multiaddrs []string
+		Pieces     []string
+	}
+	Providers []Provider
+}
+
 type Provider struct {
 	ID         string
 	PeerID     string
@@ -20,8 +31,6 @@ type Provider struct {
 }
 
 func main() {
-	var cfg Provider
-
 	cfgPath := new(string)
 	v := new(bool)
 	flag.StringVar(cfgPath, "config", "./http_retrieval.toml", "http retrieval config")
@@ -29,37 +38,26 @@ func main() {
 	flag.Parse()
 	// fmt.Println("config path:", *cfgPath)
 
-	f, err := os.Open(*cfgPath)
+	cfg, err := loadConfig(*cfgPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if _, err := toml.NewDecoder(f).Decode(&cfg); err != nil {
-		log.Fatal(err)
-	}
-	// fmt.Printf("config: %+v\n", cfg)
-
-	tsk := task.Task{
-		Timeout: time.Minute * 5,
-		Provider: task.Provider{
-			ID:         cfg.ID,
-			PeerID:     cfg.PeerID,
-			Multiaddrs: cfg.Multiaddrs,
-		},
-	}
+	fmt.Printf("config: %+v\n\n", cfg)
 
 	worker := http.Worker{}
-	for _, piece := range cfg.Pieces {
-		tsk.Content.CID = piece
-		res, err := worker.DoWork(tsk)
+	tasks := toTasks(cfg)
+	fmt.Printf("has %d tasks\n", len(tasks))
+	for _, tsk := range tasks {
+		res, err := worker.DoWork(*tsk)
 		if err != nil {
-			fmt.Printf("retrieval %s failed: %s\n", piece, err)
+			fmt.Printf("miner %s retrieval %s failed: %s\n", tsk.Provider.ID, tsk.Content.CID, err)
 		} else if res.Success {
-			fmt.Printf("retrieval %s success\n", piece)
+			fmt.Printf("miner %s retrieval %s success\n", tsk.Provider.ID, tsk.Content.CID)
 			if *v {
-				fmt.Printf("response %+v", res)
+				fmt.Printf("miner %s retrieval %s success, response: %+v\n", tsk.Provider.ID, tsk.Content.CID, res)
 			}
 		} else {
-			fmt.Printf("response failed: %+v\n", res)
+			fmt.Printf("miner %s retrieval %s failed, response: %+v\n", tsk.Provider.ID, tsk.Content.CID, res)
 		}
 	}
 
@@ -74,4 +72,77 @@ func main() {
 	// if err != nil {
 	//  logging.Logger("task-worker").With("protocol", task.HTTP).Error(err)
 	// }
+}
+
+func loadConfig(cfgPath string) (*Cfg, error) {
+	oldCfg := Provider{}
+	cfg := Cfg{}
+
+	f, err := os.Open(cfgPath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = toml.NewDecoder(bytes.NewReader(data)).Decode(&oldCfg)
+	if err == nil {
+		if len(oldCfg.ID) != 0 {
+			cfg.Providers = append(cfg.Providers, oldCfg)
+
+			return &cfg, nil
+		}
+	}
+
+	_, err = toml.NewDecoder(bytes.NewReader(data)).Decode(&cfg)
+
+	return &cfg, err
+}
+
+func toTasks(cfg *Cfg) []*task.Task {
+	var tasks []*task.Task
+	commonPieces := cfg.Common.Pieces
+	commonPeerID := cfg.Common.PeerID
+	commonMultiaddrs := cfg.Common.Multiaddrs
+	for _, p := range cfg.Providers {
+		t := task.Task{
+			Timeout: time.Minute * 5,
+			Provider: task.Provider{
+				ID:         p.ID,
+				PeerID:     p.PeerID,
+				Multiaddrs: p.Multiaddrs,
+			},
+		}
+		if len(p.ID) == 0 {
+			continue
+		}
+		if len(p.PeerID) == 0 && len(commonPeerID) != 0 {
+			t.Provider.PeerID = commonPeerID
+		}
+		if len(p.Multiaddrs) == 0 && len(commonMultiaddrs) == 0 {
+			t.Provider.Multiaddrs = commonMultiaddrs
+		}
+		pieces := p.Pieces
+		if len(pieces) == 0 {
+			if len(commonPieces) == 0 {
+				continue
+			}
+			pieces = commonPieces
+		}
+
+		for _, piece := range pieces {
+			if len(piece) == 0 {
+				continue
+			}
+			tmp := t
+			tmp.Content.CID = piece
+			tasks = append(tasks, &tmp)
+		}
+	}
+
+	return tasks
 }

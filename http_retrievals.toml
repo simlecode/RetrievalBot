@@ -1,0 +1,19 @@
+[Common]
+  PeerID = ""
+  Multiaddrs = []
+  Pieces = ["baga6ea4seaqp2gxiw4a5hrerykjpti7bzm6n6oc236jbkdykctwgthcmpqnjqhy"]
+
+[[Providers]]
+  # miner id
+  ID = "t01114587"
+  # miner peer id
+  PeerID = "12D3KooWJyN9rVrUxwHnK8oNgZ2HiU2AAggpeWePNvjQpnXKgz6H"
+  # miner multiaddr
+  Multiaddrs = ["/ip4/127.0.0.1/tcp/58415"]
+  Pieces = []
+
+[[Providers]]
+  ID = "t01114587"
+  PeerID = "12D3KooWJyN9rVrUxwHnK8oNgZ2HiU2AAggpeWePNvjQpnXKgz6H"
+  Multiaddrs = ["/ip4/127.0.0.1/tcp/58415"]
+  Pieces = []
