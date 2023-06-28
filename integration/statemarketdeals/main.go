@@ -2,6 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/bcicen/jstream"
 	"github.com/data-preservation-programs/RetrievalBot/pkg/env"
 	"github.com/data-preservation-programs/RetrievalBot/pkg/model"
@@ -13,9 +19,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 type Deal struct {
@@ -121,6 +124,7 @@ func refresh(ctx context.Context) error {
 	jsonDecoder := jstream.NewDecoder(decompressor, 1).EmitKV()
 	count := 0
 	dealBatch := make([]interface{}, 0, batchSize)
+	filter := getProviderFilter()
 	for stream := range jsonDecoder.Stream() {
 		keyValuePair, ok := stream.Value.(jstream.KV)
 
@@ -152,6 +156,12 @@ func refresh(ctx context.Context) error {
 		// Insert into mongo if the deal is not in mongo
 		//nolint:gosec
 		if _, ok := dealIDSet[int32(dealID)]; !ok {
+			if len(filter) > 0 {
+				if _, ok := filter[deal.Proposal.Provider]; !ok {
+					continue
+				}
+			}
+
 			dealState := model.DealState{
 				//nolint:gosec
 				DealID:     int32(dealID),
@@ -204,4 +214,19 @@ func refresh(ctx context.Context) error {
 
 	logger.With("count", deleteResult.DeletedCount).Info("finished deleting expired deals from mongo")
 	return nil
+}
+
+func getProviderFilter() map[string]struct{} {
+	providers := make(map[string]struct{})
+	str := env.GetString(env.Providers, "")
+	if len(str) == 0 {
+		return providers
+	}
+
+	for _, provider := range strings.Split(str, ",") {
+		providers[provider] = struct{}{}
+	}
+	fmt.Println("providers:", providers)
+
+	return providers
 }

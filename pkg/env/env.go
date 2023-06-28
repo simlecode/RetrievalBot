@@ -2,10 +2,11 @@ package env
 
 import (
 	"fmt"
-	logging "github.com/ipfs/go-log/v2"
 	"os"
 	"strconv"
 	"time"
+
+	logging "github.com/ipfs/go-log/v2"
 )
 
 type Key string
@@ -43,6 +44,7 @@ const (
 	AcceptedContinents            Key = "ACCEPTED_CONTINENTS"
 	AcceptedCountries             Key = "ACCEPTED_COUNTRIES"
 	IPInfoToken                   Key = "IPINFO_TOKEN"
+	Providers                     Key = "PROVIDERS"
 )
 
 func GetString(key Key, defaultValue string) string {
