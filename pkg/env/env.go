@@ -45,6 +45,7 @@ const (
 	AcceptedCountries             Key = "ACCEPTED_COUNTRIES"
 	IPInfoToken                   Key = "IPINFO_TOKEN"
 	Providers                     Key = "PROVIDERS"
+	Clients                       Key = "CLIENTS"
 )
 
 func GetString(key Key, defaultValue string) string {

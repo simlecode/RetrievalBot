@@ -63,7 +63,8 @@ func main() {
 
 	// Get the current day part of yesterday
 	now := time.Now().UTC()
-	endDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	// endDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	endDate := now
 
 	fmt.Printf("startDate: %s, endDate: %s\n", startDate, endDate)
 	if startDate.After(endDate) || startDate.Equal(endDate) {

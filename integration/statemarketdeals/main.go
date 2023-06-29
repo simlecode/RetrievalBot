@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -124,7 +123,8 @@ func refresh(ctx context.Context) error {
 	jsonDecoder := jstream.NewDecoder(decompressor, 1).EmitKV()
 	count := 0
 	dealBatch := make([]interface{}, 0, batchSize)
-	filter := getProviderFilter()
+	filter := getProviderClientFilter()
+	clients := make(map[string]map[string]struct{}, len(filter))
 	for stream := range jsonDecoder.Stream() {
 		keyValuePair, ok := stream.Value.(jstream.KV)
 
@@ -158,9 +158,16 @@ func refresh(ctx context.Context) error {
 		if _, ok := dealIDSet[int32(dealID)]; !ok {
 			if len(filter) > 0 {
 				if _, ok := filter[deal.Proposal.Provider]; !ok {
-					continue
+					if _, ok := filter[deal.Proposal.Client]; !ok {
+						continue
+					}
 				}
 			}
+			_, ok := clients[deal.Proposal.Client]
+			if !ok {
+				clients[deal.Proposal.Client] = make(map[string]struct{})
+			}
+			clients[deal.Proposal.Client][deal.Proposal.Provider] = struct{}{}
 
 			dealState := model.DealState{
 				//nolint:gosec
@@ -212,21 +219,35 @@ func refresh(ctx context.Context) error {
 		return errors.Wrap(err, "failed to delete expired deals")
 	}
 
+	for client, providers := range clients {
+		tmp := make([]string, 0, len(providers))
+		for provider := range providers {
+			tmp = append(tmp, provider)
+		}
+		logger.Infof("client: %v, providers: %v", client, tmp)
+	}
+
 	logger.With("count", deleteResult.DeletedCount).Info("finished deleting expired deals from mongo")
 	return nil
 }
 
-func getProviderFilter() map[string]struct{} {
-	providers := make(map[string]struct{})
-	str := env.GetString(env.Providers, "")
-	if len(str) == 0 {
-		return providers
+func getProviderClientFilter() map[string]struct{} {
+	filter := make(map[string]struct{})
+	providers := env.GetString(env.Providers, "")
+	clients := env.GetString(env.Clients, "")
+	if len(providers) == 0 && len(clients) == 0 {
+		return filter
 	}
 
-	for _, provider := range strings.Split(str, ",") {
-		providers[provider] = struct{}{}
+	for _, provider := range strings.Split(providers, ",") {
+		filter[provider] = struct{}{}
 	}
-	fmt.Println("providers:", providers)
+	logger.Info("providers: ", providers)
 
-	return providers
+	for _, client := range strings.Split(clients, ",") {
+		filter[client] = struct{}{}
+	}
+	logger.Info("clients: ", clients)
+
+	return filter
 }
