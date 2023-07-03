@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"time"
+
 	"github.com/data-preservation-programs/RetrievalBot/integration/filplus/util"
 	"github.com/data-preservation-programs/RetrievalBot/pkg/env"
 	"github.com/data-preservation-programs/RetrievalBot/pkg/model"
@@ -13,7 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 var logger = logging.Logger("filplus-integration")
@@ -145,8 +146,10 @@ func (f *FilPlusIntegration) RunOnce(ctx context.Context) error {
 		return errors.Wrap(err, "failed to decode documents")
 	}
 
+	total := len(documents)
 	documents = RandomObjects(documents, len(documents)/2, f.randConst)
 	tasks, results := util.AddTasks(ctx, f.requester, f.ipInfo, documents, f.locationResolver, f.providerResolver)
+	logger.Infof("total: %v, selected: %v", total, len(documents))
 
 	if len(tasks) > 0 {
 		_, err = f.taskCollection.InsertMany(ctx, tasks)

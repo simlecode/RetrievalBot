@@ -2,6 +2,9 @@ package util
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/data-preservation-programs/RetrievalBot/pkg/convert"
 	"github.com/data-preservation-programs/RetrievalBot/pkg/env"
 	"github.com/data-preservation-programs/RetrievalBot/pkg/model"
@@ -13,8 +16,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/slices"
-	"strconv"
-	"time"
 )
 
 var logger = logging.Logger("addTasks")
@@ -79,7 +80,9 @@ func AddTasks(ctx context.Context,
 		}
 
 		if isPayloadCID {
-			for _, module := range []task.ModuleName{task.GraphSync, task.Bitswap} {
+			// for _, module := range []task.ModuleName{task.GraphSync, task.Bitswap} {
+			// not support GraphSync Bitswap
+			for _, module := range []task.ModuleName{} {
 				tasks = append(tasks, task.Task{
 					Requester: requester,
 					Module:    module,
