@@ -191,6 +191,7 @@ func refresh(ctx context.Context) error {
 				if err != nil {
 					return errors.Wrap(err, "failed to insert deal into mongo")
 				}
+				logger.Infof("insert %d deals", batchSize)
 
 				count += len(dealBatch)
 				dealBatch = make([]interface{}, 0, batchSize)

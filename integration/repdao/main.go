@@ -15,6 +15,7 @@ import (
 type DailyStats struct {
 	ProviderID                string  `bson:"provider_id"`
 	Date                      string  `bson:"date"`
+	Client                    string  `bson:"client"`
 	HTTPRetrievals            int     `bson:"http_retrievals"`
 	HTTPRetrievalSuccess      int     `bson:"http_retrieval_success"`
 	GraphSyncRetrievals       int     `bson:"graphsync_retrievals"`
@@ -87,6 +88,7 @@ func main() {
 			}}}},
 			{"module", "$task.module"},
 			{"success", "$result.success"},
+			{"client", "$task.metadata.client"},
 		}},
 		{"count", bson.D{{"$sum", 1}}},
 		{"ttfb_sum", bson.D{{"$sum", "$result.ttfb"}}},
@@ -97,6 +99,7 @@ func main() {
 		{"_id", bson.D{
 			{"provider_id", "$_id.provider_id"},
 			{"date", "$_id.date"},
+			{"client", "$_id.client"},
 		}},
 		{"http_retrievals", bson.D{{"$sum", bson.D{
 			{"$cond", bson.A{
@@ -175,6 +178,7 @@ func main() {
 	projectStage := bson.D{{"$project", bson.D{
 		{"provider_id", "$_id.provider_id"},
 		{"date", "$_id.date"},
+		{"client", "$_id.client"},
 		{"http_retrievals", 1},
 		{"http_retrieval_success", 1},
 		{"bitswap_retrievals", 1},
